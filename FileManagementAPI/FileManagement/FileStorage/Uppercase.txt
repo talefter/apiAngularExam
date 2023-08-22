@@ -1,0 +1,249 @@
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { stat } from 'fs';
+import { combineLatest, Subscription } from 'rxjs';
+import { CloudPlatformEnum } from 'src/app/core/models/accounts/enum/CloudPlatformEnum';
+import { ApiRecommendationsService } from 'src/app/core/services/apiService/recommendations/api-recommendations.service';
+import { AWSBasedOnPastEnum } from '../../../enums/AWSBasedOnPastEnum';
+import { AWSOfferingClassEnum } from '../../../enums/AWSOfferingClassEnum';
+import { AWSPaymentOptionEnum } from '../../../enums/AWSPaymentOptionEnum';
+import { AWSRecommendationLevelEnum } from '../../../enums/AWSRecommendationLevelEnum';
+import { AWSRecommendationTypeEnum } from '../../../enums/AWSRecommendationTypeEnum';
+import { AWSTermEnum } from '../../../enums/AWSTermEnum';
+import { RadioGroupOptionsEnum } from '../../../enums/RadioGroupOptionsEnum';
+import { IAWSRIRequest } from '../../../models/aws/IAWSRIRequest';
+import { IRecommendationsRequest } from '../../../models/IRecommendationsRequest';
+import { IRecommendationsResponse } from '../../../models/IRecommendationsResponse';
+import { RecommendationsStateService } from '../../../services/recommendationsStateService/recommendations-state.service';
+
+@Component({
+  selector: 'app-aws-ri-recommendations',
+  templateUrl: './aws-ri-recommendations.component.html',
+  styleUrls: ['../aws.component.css']
+})
+export class AwsRiRecommendationsComponent implements OnInit, OnChanges , OnDestroy{
+  @Input('subType') public subType?: string = "EC2";
+  @Output() recommendationsResponseEvent: EventEmitter<{response:IRecommendationsResponse[],status:boolean}> = new EventEmitter<{response:IRecommendationsResponse[],status:boolean}>();
+
+  recommendationsRequest: IAWSRIRequest;
+  recommendationsResponse: IRecommendationsResponse;
+  subscriptions: Subscription = new Subscription();
+  recommendationsRi =
+    {
+      EC2: [      
+        { key: RadioGroupOptionsEnum.OFFERING_CLASS, value: [{ key: 'Standard', enum: AWSOfferingClassEnum.STANDARD }, { key: 'Convertible', enum: AWSOfferingClassEnum.CONVERTIBLE }] },
+        { key: RadioGroupOptionsEnum.TERM, value: [{ key: '1 Year', enum: AWSTermEnum.ONE_YEAR }, { key: '3 Years', enum: AWSTermEnum.THREE_YEARS }] },
+        { key: RadioGroupOptionsEnum.PAYMENT_OPTION, value: [{ key: 'All upfront', enum: AWSPaymentOptionEnum.ALL_UPFRONT }, { key: 'Partial upfront', enum: AWSPaymentOptionEnum.PARTIAL_UPFRONT }, { key: 'No upfront', enum: AWSPaymentOptionEnum.NO_UPFRONT }] },
+        { key: RadioGroupOptionsEnum.BASED_ON_PAST, value: [{ key: '7 Days', enum: AWSBasedOnPastEnum.SEVEN_DAYS }, { key: '30 Days', enum: AWSBasedOnPastEnum.THIRTY_DAYS }, { key: '60 Days', enum: AWSBasedOnPastEnum.SIXTY_DAYS }] },
+        { key: RadioGroupOptionsEnum.LEVEL, value: [{ key: 'Payer', enum: AWSRecommendationLevelEnum.PAYER }, { key: 'Linked account', enum: AWSRecommendationLevelEnum.LINKED_ACCOUNT }] },
+      ],
+      RDS: [
+        { key: RadioGroupOptionsEnum.TERM, value: [{ key: '1 Year', enum: AWSTermEnum.ONE_YEAR }, { key: '3 Years', enum: AWSTermEnum.THREE_YEARS }] },
+        { key: RadioGroupOptionsEnum.PAYMENT_OPTION, value: [{ key: 'All upfront', enum: AWSPaymentOptionEnum.ALL_UPFRONT }, { key: 'Partial upfront', enum: AWSPaymentOptionEnum.PARTIAL_UPFRONT }, { key: 'No upfront', enum: AWSPaymentOptionEnum.NO_UPFRONT }] },
+        { key: RadioGroupOptionsEnum.BASED_ON_PAST, value: [{ key: '7 Days', enum: AWSBasedOnPastEnum.SEVEN_DAYS }, { key: '30 Days', enum: AWSBasedOnPastEnum.THIRTY_DAYS }, { key: '60 Days', enum: AWSBasedOnPastEnum.SIXTY_DAYS }] },
+        { key: RadioGroupOptionsEnum.LEVEL, value: [{ key: 'Payer', enum: AWSRecommendationLevelEnum.PAYER }, { key: 'Linked account', enum: AWSRecommendationLevelEnum.LINKED_ACCOUNT }] },
+      ],
+      ELASTI_CACHE: [
+        { key: RadioGroupOptionsEnum.TERM, value: [{ key: '1 Year', enum: AWSTermEnum.ONE_YEAR }, { key: '3 Years', enum: AWSTermEnum.THREE_YEARS }] },
+        { key: RadioGroupOptionsEnum.PAYMENT_OPTION, value: [{ key: 'All upfront', enum: AWSPaymentOptionEnum.ALL_UPFRONT }, { key: 'Partial upfront', enum: AWSPaymentOptionEnum.PARTIAL_UPFRONT }, { key: 'No upfront', enum: AWSPaymentOptionEnum.NO_UPFRONT }] },
+        { key: RadioGroupOptionsEnum.BASED_ON_PAST, value: [{ key: '7 Days', enum: AWSBasedOnPastEnum.SEVEN_DAYS }, { key: '30 Days', enum: AWSBasedOnPastEnum.THIRTY_DAYS }, { key: '60 Days', enum: AWSBasedOnPastEnum.SIXTY_DAYS }] },
+        { key: RadioGroupOptionsEnum.LEVEL, value: [{ key: 'Payer', enum: AWSRecommendationLevelEnum.PAYER }, { key: 'Linked account', enum: AWSRecommendationLevelEnum.LINKED_ACCOUNT }] },
+      ],
+      REDSHIFT: [
+        { key: RadioGroupOptionsEnum.TERM, value: [{ key: '1 Year', enum: AWSTermEnum.ONE_YEAR }, { key: '3 Years', enum: AWSTermEnum.THREE_YEARS }] },
+        { key: RadioGroupOptionsEnum.PAYMENT_OPTION, value: [{ key: 'All upfront', enum: AWSPaymentOptionEnum.ALL_UPFRONT }, { key: 'Partial upfront', enum: AWSPaymentOptionEnum.PARTIAL_UPFRONT }, { key: 'No upfront', enum: AWSPaymentOptionEnum.NO_UPFRONT }] },
+        { key: RadioGroupOptionsEnum.BASED_ON_PAST, value: [{ key: '7 Days', enum: AWSBasedOnPastEnum.SEVEN_DAYS }, { key: '30 Days', enum: AWSBasedOnPastEnum.THIRTY_DAYS }, { key: '60 Days', enum: AWSBasedOnPastEnum.SIXTY_DAYS }] },
+        { key: RadioGroupOptionsEnum.LEVEL, value: [{ key: 'Payer', enum: AWSRecommendationLevelEnum.PAYER }, { key: 'Linked account', enum: AWSRecommendationLevelEnum.LINKED_ACCOUNT }] },
+      ],
+      ELASTICSEARCH: [
+        { key: RadioGroupOptionsEnum.TERM, value: [{ key: '1 Year', enum: AWSTermEnum.ONE_YEAR }, { key: '3 Years', enum: AWSTermEnum.THREE_YEARS }] },
+        { key: RadioGroupOptionsEnum.PAYMENT_OPTION, value: [{ key: 'All upfront', enum: AWSPaymentOptionEnum.ALL_UPFRONT }, { key: 'Partial upfront', enum: AWSPaymentOptionEnum.PARTIAL_UPFRONT }, { key: 'No upfront', enum: AWSPaymentOptionEnum.NO_UPFRONT }] },
+        { key: RadioGroupOptionsEnum.BASED_ON_PAST, value: [{ key: '7 Days', enum: AWSBasedOnPastEnum.SEVEN_DAYS }, { key: '30 Days', enum: AWSBasedOnPastEnum.THIRTY_DAYS }, { key: '60 Days', enum: AWSBasedOnPastEnum.SIXTY_DAYS }] },
+        { key: RadioGroupOptionsEnum.LEVEL, value: [{ key: 'Payer', enum: AWSRecommendationLevelEnum.PAYER }, { key: 'Linked account', enum: AWSRecommendationLevelEnum.LINKED_ACCOUNT }] },
+      ]
+    };
+
+  recommendationsRiValues =
+    {
+      EC2: {
+        'Offering class': AWSOfferingClassEnum.STANDARD,
+        'Term': AWSTermEnum.ONE_YEAR,
+        'Payment option': AWSPaymentOptionEnum.ALL_UPFRONT,
+        'Based on past': AWSBasedOnPastEnum.THIRTY_DAYS,
+        'Level': AWSRecommendationLevelEnum.PAYER,
+      }
+      ,
+      RDS:
+      {
+        'Term': AWSTermEnum.ONE_YEAR,
+        'Payment option': AWSPaymentOptionEnum.ALL_UPFRONT,
+        'Based on past': AWSBasedOnPastEnum.THIRTY_DAYS,
+        'Level': AWSRecommendationLevelEnum.PAYER,
+      }
+      ,
+      ELASTI_CACHE:
+      {
+        'Term': AWSTermEnum.ONE_YEAR,
+        'Payment option': AWSPaymentOptionEnum.ALL_UPFRONT,
+        'Based on past': AWSBasedOnPastEnum.THIRTY_DAYS,
+        'Level': AWSRecommendationLevelEnum.PAYER,
+      },
+      REDSHIFT: {
+        'Term': AWSTermEnum.ONE_YEAR,
+        'Payment option': AWSPaymentOptionEnum.ALL_UPFRONT,
+        'Based on past': AWSBasedOnPastEnum.THIRTY_DAYS,
+        'Level': AWSRecommendationLevelEnum.PAYER,
+      },
+      ELASTICSEARCH: {
+        'Term': AWSTermEnum.ONE_YEAR,
+        'Payment option': AWSPaymentOptionEnum.ALL_UPFRONT,
+        'Based on past': AWSBasedOnPastEnum.THIRTY_DAYS,
+        'Level': AWSRecommendationLevelEnum.PAYER,
+      }
+    };
+  currentSubType: string;
+  value: string[] ;
+  nodes: any;
+  linkedAccountResponse: string[];
+  selectedResellerId: any;
+  status: boolean;
+  errorMessage="";
+  isGetRecommendationsEnabled: boolean =false;
+  awsErrorMessage='';
+
+  constructor(private recommendationsService: ApiRecommendationsService,
+    private recommendationsStateService: RecommendationsStateService) {
+    const accounts$ = this.recommendationsStateService.getAllUserAccounts();
+    const resellerId$ = this.recommendationsStateService.getSelectedResellerAccountId();
+    const status$ = this.recommendationsStateService.getStatus();
+    
+    this.subscriptions.add(combineLatest(accounts$, resellerId$,status$).subscribe(([userAccounts, selectedResellerId,status]) => {
+      if(this.selectedResellerId!=selectedResellerId){
+        this.awsErrorMessage='';
+      }
+    
+      if(selectedResellerId)
+      this.selectedResellerId= selectedResellerId;
+      if (status) 
+      this.status = status.data;
+      if (!userAccounts || (!userAccounts.resellerAccounts && !userAccounts.customerAccounts))
+        return;
+      if (userAccounts.resellerAccounts?.length) {
+        const resellerAccounts = userAccounts?.resellerAccounts;
+        this.value = [`${selectedResellerId}`]
+        this.nodes = resellerAccounts
+          .filter(ra => !selectedResellerId || ra.id === selectedResellerId)
+          .map(ra => ({
+            title: ra.name,
+            key: `${ra.id}`,
+            value: `${ra.id}`,
+            children: ra.customers.map(
+              c => ({
+                title: c.name,
+                key: `${c.billingAccountId}`,
+                value: `${c.billingAccountId}`,
+                isLeaf: true
+              })
+            ).sort((a, b) => a.title.localeCompare(b.title))
+          }));
+          this.linkedAccountResponse =this.nodes[0].children.map(ra=>ra.value);
+      }
+      else {
+        this.nodes = userAccounts.customerAccounts.map(
+          c => ({
+            title: c.name,
+            key: `${c.billingAccountId}`,
+            value: `${c.billingAccountId}`,
+            isLeaf: true
+          })
+        ).sort((a, b) => a.title.localeCompare(b.title));
+        this.linkedAccountResponse =this.nodes.map(ra=>ra.value);
+        this.value = this.linkedAccountResponse;
+      }
+      
+      if (this.nodes && status && this.status!=undefined&&this.awsErrorMessage=='')
+      this.onGetRecommendationClick();
+
+    }));
+
+    
+  }
+  ngOnInit(): void {
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    let subType = changes['subType'].currentValue;
+    if (subType) {
+      this.currentSubType = subType;
+      if(this.status!=undefined&&this.recommendationsResponse&&this.awsErrorMessage=='')
+      this.onGetRecommendationClick();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+   
+  }
+  radioValueChanged(event, key) {
+    this.isGetRecommendationsEnabled=true;
+    if(this.errorMessage!=''&&event==AWSRecommendationLevelEnum.PAYER){
+      this.errorMessage='';
+    }
+    if(event==AWSRecommendationLevelEnum.LINKED_ACCOUNT&&(this.linkedAccountResponse.length==0 ||this.linkedAccountResponse==[])){
+      this.errorMessage = "you have to choose at least one account"
+    }
+    this.recommendationsRiValues[this.subType][key] = event;
+  }
+
+  
+  onLinkedAccountChanged(event: string[]): void {
+    this.errorMessage="";
+   this.isGetRecommendationsEnabled=true;
+    this.linkedAccountResponse = event;
+    if(event==this.selectedResellerId?.toString()){
+      this.linkedAccountResponse = this.nodes[0].children.map(ra=>ra.value);
+    }
+    if(this.linkedAccountResponse.length==0 ||this.linkedAccountResponse==[]){
+      this.isGetRecommendationsEnabled=false;
+      this.errorMessage = "you have to choose at least one account"
+    }
+  }
+  
+  onGetRecommendationClick() {
+    if(this.status){
+      if(this.nodes){
+        this.recommendationsRequest = {
+          awsTerm: this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.TERM],
+          awsPaymentOption: this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.PAYMENT_OPTION],
+          awsBasedOnPast: this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.BASED_ON_PAST],
+          awsOfferingClass: this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.OFFERING_CLASS],
+          awsRecommendationType: AWSRecommendationTypeEnum[this.subType],
+          awsRecommendationLevel:this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.LEVEL], //default is PAYER
+          linkedAccounts:this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.LEVEL]==AWSRecommendationLevelEnum.LINKED_ACCOUNT?this.linkedAccountResponse:[],
+          includeLinkedAccounts: this.recommendationsRiValues[this.subType][RadioGroupOptionsEnum.LEVEL]==AWSRecommendationLevelEnum.PAYER?false:true
+    
+        };
+        this.recommendationsService.getAWSRecommendations(CloudPlatformEnum.AWS, 'RI', this.recommendationsRequest, this.selectedResellerId).subscribe(res => {
+          this.recommendationsResponse = res;
+
+          if(res.errorCode){
+            this.awsErrorMessage=res.message;
+            this.recommendationsResponse={data:res}
+          }
+            if (this.recommendationsResponse)
+            this.recommendationsResponseEvent.emit({response:this.recommendationsResponse.data,status:this.status});
+         
+            
+        });
+     
+      }
+
+
+  }
+  else {
+    if(this.status!=undefined)
+      this.recommendationsResponseEvent.emit({ response: null, status: this.status });
+  }
+}
+ 
+
+}

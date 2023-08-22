@@ -1,0 +1,12 @@
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\bin\Debug\net6.0\FileManagmentService.deps.json
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\bin\Debug\net6.0\FileManagmentService.dll
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\bin\Debug\net6.0\FileManagmentService.pdb
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.AssemblyInfoInputs.cache
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.AssemblyInfo.cs
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.csproj.CoreCompileInputs.cache
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.dll
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\refint\FileManagmentService.dll
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.pdb
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\ref\FileManagmentService.dll
+C:\Users\User\Desktop\Exam\API\WebApplication6\FileManagmentService\obj\Debug\net6.0\FileManagmentService.csproj.AssemblyReference.cache

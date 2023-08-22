@@ -1,0 +1,30 @@
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  
+  table, th, td {
+    border: 1px solid black;
+    padding: 8px;
+    text-align: left;
+  }
+  
+  th {
+    background-color: #f2f2f2;
+  }
+
+
+  .upload-file {
+    display: none;
+  }
+
+  .footer {
+    display: flex;
+justify-content: end;  
+padding-top: 5px;}
+
+  .label-file {
+    border: 1px solid black;
+padding: 2px;
+  }

@@ -1,0 +1,1029 @@
+import { Component, OnInit, Input, ViewChild, SimpleChanges } from '@angular/core';
+import { IBudgetAlertDTO } from '../../Models/IBudgetAlertDTO';
+import { FormBuilder, FormControl, Validators } from '@angular/forms';
+import { ApiBudgetsService } from '../../services/api-budgets.service';
+import { NzMessageService } from 'ng-zorro-antd/message';
+import { IAlertUpdateDTO } from 'src/app/core/models/alerts/IAlertUpdateDTO';
+import { AlertTypeEnum } from 'src/app/core/models/alerts/enum/AlertTypeEnum';
+import { IAlertsEmails } from '../../Models/IAlertsEmails';
+
+
+
+@Component({
+  selector: 'app-alert-details',
+  templateUrl: './alert-details.component.html',
+  styleUrls: ['./alert-details.component.css']
+})
+export class AlertDetailsComponent implements OnInit {
+  selectedFirstAlert: { value: number; text: string; }[];
+  selectedSecondAlert: { value: number; text: string; }[];
+  selectedThirdAlert: { value: number; text: string; }[];
+  actualSpend = new FormControl(['', Validators.required, Validators.min(1)])
+  projectSpend = new FormControl([Validators.required])
+  anomaly = new FormControl();
+  averagePeriodForm = new FormControl();
+  isCheckedActualSpend: boolean = true
+  isCheckedProjectSpend: boolean = true
+  isCheckedDeviates: boolean = true
+  percent: string = "";
+  averagePeriod: string = "60";
+  status: string = "DISABLED";
+  newAlertActualSpend: IAlertUpdateDTO;
+  newAlertExceed: IAlertUpdateDTO;
+  newAlertDeviates: IAlertUpdateDTO;
+  @Input('alertInfo') public alertInfo: IBudgetAlertDTO;
+  // percent select data
+  percentList = [
+    {
+      'value': 10,
+      'text': "10%"
+    },
+    {
+      'value': 20,
+      'text': "20%"
+    },
+    {
+      'value': 25,
+      'text': "25%"
+    },
+    {
+      'value': 30,
+      'text': "30%"
+    },
+    {
+      'value': 33,
+      'text': "33%"
+    },
+    {
+      'value': 40,
+      'text': "40%"
+    },
+    {
+      'value': 50,
+      'text': "50%"
+    },
+    {
+      'value': 60,
+      'text': "60%"
+    },
+    {
+      'value': 66,
+      'text': "66%"
+    },
+    {
+      'value': 70,
+      'text': "70%"
+    },
+    {
+      'value': 75,
+      'text': "75%"
+    },
+    {
+      'value': 80,
+      'text': "80%"
+    },
+    {
+      'value': 90,
+      'text': "90%"
+    },
+    {
+      'value': 100,
+      'text': "100%"
+    },
+  ]
+
+  firstAlert: number[];
+  arrIndexFirstAlert: number[];
+  SecondAlert: number[];
+  arrIndexSecondAlert: number[];
+
+
+  @ViewChild('emailActualSelect', { static: false }) emailActualSelect: any;
+  @ViewChild('emailProjectedSelect', { static: false }) emailProjectedSelect: any;
+  @ViewChild('emailAnomalySelect', { static: false }) emailAnomalySelect: any;
+
+  listOfEmailOptions: { name: string; value: any }[] = [];
+  listOfExternalEmailOptions:  { name: string; value: any }[] = [];
+  emailActualSpend = new FormControl();
+  emailExceed = new FormControl();
+  emailAnomaly = new FormControl();
+  alertClicked: boolean = false;
+  secondAlertClicked: boolean = false;
+  thirdAlertClicked: boolean = false;
+  focus: boolean;
+  newEmail: any;
+  projectedPercentClick: boolean = false;
+  anomalyPercentClick: boolean = false;
+  isKeyDown: boolean = true;
+  thirdAlert: number[];
+  arrIndexThirdAlert: number[];
+  anomalyAverageClick: boolean;
+  projectedPercentOpen: boolean;
+  anomalyAverageOpen: boolean;
+  anomalyPercentOpen: boolean;
+  isChanged: boolean;
+  isUpdate: boolean = false;
+  alertsUsers: any[];
+  alertsMeta: any;
+  defaultUser: any = {};
+  defaultUserName: { name: string; value: any; } = { name: "", value: 0 };
+  defaultUserActual: { name: string; value: any; }[] = [];
+  defaultUserProjected: { name: string; value: any; }[] = [];
+  defaultUserAnomaly: { name: string; value: any; }[] = [];
+  actualSpendPercentLastValue: any;
+  eventUpdated: boolean = false;
+
+  updateTimeoutRef: any;
+  allAlertsEmails: IAlertsEmails = {
+    actualSpend: {
+      added: [],
+      addedEmail: [],
+      removed: [],
+      removedEmail: []
+    },
+    projectedSpend: {
+      added: [],
+      addedEmail: [],
+      removed: [],
+      removedEmail: []
+    },
+    anomaly: {
+      added: [],
+      addedEmail: [],
+      removed: [],
+      removedEmail: []
+  }
+}
+  isFirst = {
+    "actualSpend": { isFirstEntryActualSpend: false },
+    "projectedSpend": { isFirstEntryProjectedSpend: false },
+    "anomaly": { isFirstEntryAnomaly: false }
+  }
+  emailsCopy = {
+    "actualSpend": { emailCopy: [] },
+    "projectedSpend": { emailCopy: [] },
+    "anomaly": { emailCopy: [] }
+  }
+  errorsMessages = {
+    "actualSpend": { errorMessage: '' },
+    "projectedSpend": { errorMessage: '' },
+    "anomaly": { errorMessage: '' },
+  }
+
+  constructor(private fb: FormBuilder, private budgetsService: ApiBudgetsService, private nzMessageService: NzMessageService) { }
+  ngOnInit(): void {
+    this.getAlertsUsers();
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    let isAlertInfo = changes['alertInfo'].currentValue;
+    if (isAlertInfo) {
+      if (this.updateTimeoutRef) {
+        clearTimeout(this.updateTimeoutRef);
+      }
+      this.toggleIsUpdate(false);
+      this.changeAlertsOrder();
+      this.GetAlertsMeta();
+    }
+  }
+  changeAlertsOrder() {
+    var occupiedIndices = [],
+      objectCollection = [];
+    if (this.alertInfo && this.alertInfo.alerts) {
+      for (var i = 0; i < this.alertInfo.alerts.length; i++) {
+        if (this.alertInfo.alerts[i] != null) { // You may want to make this condition more strict
+          occupiedIndices.push(i);
+          objectCollection.push(this.alertInfo.alerts[i]);
+        }
+      };
+    }
+
+    objectCollection.sort(function (a, b) {
+      var nameA = a.type == AlertTypeEnum.PROJECTED_SPEND ? 2 : a.type == AlertTypeEnum.ANOMALY ? 3 : 1,
+        nameB = b.type == AlertTypeEnum.PROJECTED_SPEND ? 2 : b.type == AlertTypeEnum.ANOMALY ? 3 : 1;
+      if (nameA < nameB) //sort string ascending
+        return -1;
+      if (nameA > nameB)
+        return 1;
+      return 0; //default return value (no sorting)
+    });
+    if (occupiedIndices) {
+      for (i = 0; i < occupiedIndices.length; i++) {
+        this.alertInfo.alerts[occupiedIndices[i]] = objectCollection[i];
+      };
+    }
+  }
+  getAlertsUsers() {
+    this.budgetsService.getAlertsUsers().subscribe(res => {
+      this.alertsUsers = res;
+      var user = this.alertsUsers.find((user) => user.loginUser != null);
+      if (user) {
+        this.defaultUser = user;
+
+        this.defaultUserName.value = user.id;
+        this.defaultUserName.name = user.displayName;
+      }
+      this.alertTagCheck();
+      this.duplicateEmails();
+      this.updateUserEmails();
+    });
+  }
+  updateUserEmails() {
+    debugger
+    if (this.alertInfo.alerts && this.alertInfo.alerts[0] && this.alertInfo.alerts[0].alertSubscriptions) {
+      this.alertInfo.alerts[0].alertSubscriptions.forEach(element => {
+        var email = this.listOfEmailOptions.find((email) => email.value == element.userId);
+        if (email) {
+          this.defaultUserActual.push(email);
+        }
+        if (element.emailId != null) {
+          var externalEmails = element.emailId.split(",");
+          externalEmails.forEach((email, index) => {
+
+            var indexOf = this.listOfExternalEmailOptions.findIndex(x => x.name == email);
+            if (indexOf === -1) {
+              this.listOfExternalEmailOptions.push({ name: email, value: email });
+              this.defaultUserActual.push(this.listOfExternalEmailOptions[this.listOfExternalEmailOptions.length - 1]);
+            }
+            else
+              this.defaultUserActual.push(this.listOfExternalEmailOptions[indexOf]);
+          });
+        }
+      });
+    }
+    else {
+      this.defaultUserActual = [this.listOfEmailOptions[0]]
+    }
+    if (this.alertInfo.alerts && this.alertInfo.alerts[1] && this.alertInfo.alerts[1].alertSubscriptions) {
+      this.alertInfo.alerts[1].alertSubscriptions.forEach(element => {
+        var email = this.listOfEmailOptions.find((email) => email.value == element.userId);
+        if (email) {
+          this.defaultUserProjected.push(email);
+        }
+        if (element.emailId != null) {
+          var externalEmails = element.emailId.split(",");
+          externalEmails.forEach((email, index) => {
+
+            var indexOf = this.listOfExternalEmailOptions.findIndex(x => x.name == email);
+            if (indexOf === -1) {
+              this.listOfExternalEmailOptions.push({ name: email, value: email });
+              this.defaultUserProjected.push(this.listOfExternalEmailOptions[this.listOfExternalEmailOptions.length - 1]);
+            }
+            else
+              this.defaultUserProjected.push(this.listOfExternalEmailOptions[indexOf]);
+          });
+        }
+      });
+    }
+    else {
+      this.defaultUserProjected = [this.listOfEmailOptions[0]];
+    }
+    if (this.alertInfo.alerts && this.alertInfo.alerts[2] && this.alertInfo.alerts[2].alertSubscriptions) {
+      this.alertInfo.alerts[2].alertSubscriptions.forEach(element => {
+        var email = this.listOfEmailOptions.find((email) => email.value == element.userId);
+        if (email) {
+          this.defaultUserAnomaly.push(email);
+        }
+        if (element.emailId != null) {
+          var externalEmails = element.emailId.split(",");
+          externalEmails.forEach((email, index) => {
+
+            var indexOf = this.listOfExternalEmailOptions.findIndex(x => x.name == email);
+            if (indexOf === -1) {
+              this.listOfExternalEmailOptions.push({ name: email, value: email });
+              this.defaultUserAnomaly.push(this.listOfExternalEmailOptions[this.listOfExternalEmailOptions.length - 1]);
+            }
+            else
+              this.defaultUserAnomaly.push(this.listOfEmailOptions[indexOf]);
+          });
+        }
+      });
+
+    }
+    else {
+      this.defaultUserAnomaly = [this.listOfEmailOptions[0]];
+    }
+  }
+  private GetAlertsMeta() {
+    this.budgetsService.getAllAlertsMeta().subscribe(res => {
+      this.alertsMeta = res;
+      this.buildAlertsDetails();
+    });
+  }
+
+  alertTagCheck() {
+    const children: Array<{ name: string; value: number }> = [];
+    if (this.alertsUsers) {
+      for (let i = 0; i < this.alertsUsers.length; i++) {
+        children.push({ name: this.alertsUsers[i].displayName ? this.alertsUsers[i].displayName : this.alertsUsers[i].email, value: this.alertsUsers[i].id });
+      }
+    }
+    this.listOfEmailOptions = children;
+
+  };
+
+  private buildAlertsDetails() {
+    this.updateStatus();
+    this.updateThresholds();
+    this.GetSelectedthirdAlert();
+    this.GetSelectedSecondAlert();
+    this.GetSelectedFirstAlert();
+    if (this.updateTimeoutRef) {
+      clearTimeout(this.updateTimeoutRef);
+    }
+    this.updateTimeoutRef = setTimeout(() => {
+      this.toggleIsUpdate(true);
+    }, 500);
+
+  }
+  toggleIsUpdate(toggle: boolean) {
+    this.isUpdate = toggle;
+  }
+
+  duplicateEmails() {
+    this.resetCopyEmails();
+    if (this.alertInfo.alerts[0] && this.alertInfo.alerts[0].alertSubscriptions.length != 0) {
+      this.alertInfo.alerts[0].alertSubscriptions.forEach(element => {
+
+        if (element.emailId != null) {
+          var externalEmails = element.emailId.split(",");
+          externalEmails.forEach((email, index) => {
+            var indexOf = this.emailsCopy["actualSpend"].emailCopy.findIndex(x => x == email);
+            if (indexOf === -1) {
+              this.emailsCopy["actualSpend"].emailCopy.push(email);
+            }
+          });
+        }
+
+        if (element.userId) {
+          var indexOf = this.emailsCopy["actualSpend"].emailCopy.findIndex(x => x == element.userId);
+          if (indexOf === -1) {
+            this.emailsCopy["actualSpend"].emailCopy.push(element.userId);
+          }
+        }
+      });
+    }
+    if (this.alertInfo.alerts[1] && this.alertInfo.alerts[1].alertSubscriptions.length != 0) {
+
+      this.alertInfo.alerts[1].alertSubscriptions.forEach(element => {
+
+        if (element.emailId != null) {
+          var externalEmails = element.emailId.split(",");
+          externalEmails.forEach((email, index) => {
+            var indexOf = this.emailsCopy["projectedSpend"].emailCopy.findIndex(x => x == email);
+            if (indexOf === -1) {
+              this.emailsCopy["projectedSpend"].emailCopy.push(email);
+            }
+          });
+        }
+        if (element.userId) {
+          var indexOf = this.emailsCopy["projectedSpend"].emailCopy.findIndex(x => x == element.userId);
+          if (indexOf === -1) {
+            this.emailsCopy["projectedSpend"].emailCopy.push(element.userId);
+          }
+        }
+      });
+
+    }
+    if (this.alertInfo.alerts[2] && this.alertInfo.alerts[2].alertSubscriptions.length != 0) {
+      this.alertInfo.alerts[2].alertSubscriptions.forEach(element => {
+        if (element.emailId != null) {
+          var externalEmails = element.emailId.split(",");
+          externalEmails.forEach((email, index) => {
+            var indexOf = this.emailsCopy["anomaly"].emailCopy.findIndex(x => x == email);
+            if (indexOf === -1) {
+              this.emailsCopy["anomaly"].emailCopy.push(email);
+            }
+          });
+        }
+        if (element.userId) {
+          var indexOf = this.emailsCopy["anomaly"].emailCopy.findIndex(x => x == element.userId);
+          if (indexOf === -1) {
+            this.emailsCopy["anomaly"].emailCopy.push(element.userId);
+          }
+        }
+      });
+
+    }
+  }
+  resetCopyEmails() {
+    this.emailsCopy = {
+      "actualSpend": { emailCopy: [] },
+      "projectedSpend": { emailCopy: [] },
+      "anomaly": { emailCopy: [] }
+    }
+  }
+
+  private updateThresholds() {
+    if (this.alertsMeta) {
+      this.firstAlert = this.alertInfo.alerts[0] ? this.alertInfo.alerts[0].thresholds : [this.alertsMeta["default-thresholds"].ACTUAL_SPEND];
+      this.SecondAlert = this.alertInfo.alerts[1] ? this.alertInfo.alerts[1].thresholds : [this.alertsMeta["default-thresholds"].PROJECTED_SPEND];
+      this.thirdAlert = this.alertInfo.alerts[2] ? this.alertInfo.alerts[2].thresholds : [this.alertsMeta["default-thresholds"].ANOMALY];
+    }
+  }
+
+  private updateStatus() {
+    this.isCheckedActualSpend = this.alertInfo.alerts[0] ? this.alertInfo.alerts[0].status == "DISABLED" ? false : true : true;
+    this.isCheckedProjectSpend = this.alertInfo.alerts[1] ? this.alertInfo.alerts[1].status == "DISABLED" ? false : true : false;
+    this.isCheckedDeviates = this.alertInfo.alerts[2] ? this.alertInfo.alerts[2].status == "DISABLED" ? false : true : false;
+  }
+
+  editEmail() {
+    if (this.emailActualSelect)
+      this.emailActualSelect.focus();
+  }
+
+
+  onAlertClick() {
+    this.alertClicked = !this.alertClicked;
+    setTimeout(() => {
+      if (this.emailActualSelect)
+        this.emailActualSelect.elementRef.nativeElement.firstElementChild.lastElementChild.firstElementChild.focus();
+    }, 500);
+
+  }
+  onSecondAlertClick() {
+    this.secondAlertClicked = !this.secondAlertClicked;
+    setTimeout(() => {
+      if (this.emailProjectedSelect)
+        this.emailProjectedSelect.elementRef.nativeElement.firstElementChild.lastElementChild.firstElementChild.focus();
+    }, 500);
+  }
+
+  onThirdAlertClick() {
+    this.thirdAlertClicked = !this.thirdAlertClicked;
+    setTimeout(() => {
+      if (this.emailAnomalySelect)
+        this.emailAnomalySelect.elementRef.nativeElement.firstElementChild.lastElementChild.firstElementChild.focus();
+    }, 500);
+  }
+
+  onProjectedPercentClick() {
+    this.projectedPercentClick = !this.projectedPercentClick;
+    setTimeout(() => {
+      this.projectedPercentOpen = true;
+    }, 500);
+  }
+
+
+  onAnomalyAverageClick() {
+    this.anomalyAverageClick = !this.anomalyAverageClick;
+    setTimeout(() => {
+      this.anomalyAverageOpen = true;
+    }, 500);
+  }
+
+  onAnomalyClick() {
+    this.anomalyPercentClick = !this.anomalyPercentClick;
+    setTimeout(() => {
+      this.anomalyPercentOpen = true;
+    }, 500);
+  }
+  //index of matching values in precentLIst 
+  getIndexesFirstAlert(): number[] {
+    var arrIndex = new Array<number>();
+    if (this.firstAlert != null) {
+      for (let index = 0; index < this.firstAlert.length; index++) {
+        const elementAlert = this.firstAlert[index];
+        for (let index = 0; index < this.percentList.length; index++) {
+          const elementList = this.percentList[index].value;
+          if (elementAlert == elementList) {
+            arrIndex.push(index)
+          }
+        }
+      }
+    }
+    return arrIndex
+  }
+
+  //index of matching values in precentLIst 
+  getIndexesSecondAlert(): number[] {
+    var arrIndex2 = new Array<number>();
+    if (this.SecondAlert != null) {
+      for (let index = 0; index < this.SecondAlert.length; index++) {
+        const elementAlert = this.SecondAlert[index];
+        for (let index = 0; index < this.percentList.length; index++) {
+          const elementList = this.percentList[index].value;
+          if (elementAlert == elementList) {
+            arrIndex2.push(index)
+          }
+        }
+      }
+    }
+    return arrIndex2
+  }
+
+  getIndexesThirdAlert(): number[] {
+    var arrIndex3 = new Array<number>();
+    if (this.thirdAlert != null) {
+      for (let index = 0; index < this.thirdAlert.length; index++) {
+        const elementAlert = this.thirdAlert[index];
+        for (let index = 0; index < this.percentList.length; index++) {
+          const elementList = this.percentList[index].value;
+          if (elementAlert == elementList) {
+            arrIndex3.push(index)
+          }
+        }
+      }
+    }
+    return arrIndex3
+  }
+
+  //the thresholds of first alert from response data to show on details
+  private GetSelectedFirstAlert() {
+
+    this.arrIndexFirstAlert = this.getIndexesFirstAlert();
+    this.selectedFirstAlert = [this.percentList[this.arrIndexFirstAlert[0]], this.arrIndexFirstAlert[1] ? this.percentList[this.arrIndexFirstAlert[1]] : { value: null, text: null }, this.arrIndexFirstAlert[2] ? this.percentList[this.arrIndexFirstAlert[2]] : { value: null, text: null }];
+    if (this.arrIndexFirstAlert[0] != null) {
+      if (this.arrIndexFirstAlert[1] == null || this.arrIndexFirstAlert[2] == null) {
+        this.arrIndexFirstAlert.pop();
+      }
+    }
+
+  }
+
+  //the thresholds of second alert  from response data to show on details
+  private GetSelectedSecondAlert() {
+
+    this.arrIndexSecondAlert = this.getIndexesSecondAlert();
+    if (this.arrIndexSecondAlert[0] != undefined) {
+      this.selectedSecondAlert = [this.percentList[this.arrIndexSecondAlert[0]], this.arrIndexSecondAlert[1] ? this.percentList[this.arrIndexSecondAlert[1]] : { value: null, text: null }, this.arrIndexSecondAlert[2] ? this.percentList[this.arrIndexSecondAlert[2]] : { value: null, text: null }];
+
+      if (this.arrIndexSecondAlert[0] != null) {
+        if (this.arrIndexSecondAlert[1] == null || this.arrIndexSecondAlert[2] == null) {
+          this.arrIndexSecondAlert.pop();
+        }
+      }
+    }
+
+
+  }
+  private GetSelectedthirdAlert() {
+    this.arrIndexThirdAlert = this.getIndexesThirdAlert();
+    if (this.arrIndexThirdAlert[0] != undefined) {
+      this.selectedThirdAlert = [this.percentList[this.arrIndexThirdAlert[0]], this.arrIndexThirdAlert[1] ? this.percentList[this.arrIndexThirdAlert[1]] : { value: null, text: null }, this.arrIndexThirdAlert[2] ? this.percentList[this.arrIndexThirdAlert[2]] : { value: null, text: null }];
+
+      if (this.arrIndexThirdAlert[0] != null) {
+        if (this.arrIndexThirdAlert[1] == null || this.arrIndexThirdAlert[2] == null) {
+          this.selectedThirdAlert.pop();
+        }
+      }
+    }
+  }
+
+
+  // nz- switch event for actual spend alert
+  onChangeActualSpend() {
+    this.isCheckedActualSpend = !this.isCheckedActualSpend
+    if (this.alertInfo.alerts[0]) {
+      if (this.alertInfo.alerts[0].id) {
+        this.updateAlertStatus(this.alertInfo.alerts[0].id, this.isCheckedActualSpend);
+      }
+    }
+    else {
+      this.updateAlertActualSpend("actualSpend");
+    }
+  }
+
+  // nz- switch event for projected spend alert
+  onChangeProjectedSpend() {
+    this.isCheckedProjectSpend = !this.isCheckedProjectSpend
+    if (this.alertInfo.alerts[1]) {
+      if (this.alertInfo.alerts[1].id) {
+        this.updateAlertStatus(this.alertInfo.alerts[1].id, this.isCheckedProjectSpend);
+      }
+    }
+    else {
+      this.updateAlertProjectedSpend("projectedSpend");
+    }
+  }
+
+  // nz- switch event for projected spend alert
+  onChangeAnomaly() {
+    this.isCheckedDeviates = !this.isCheckedDeviates
+    if (this.alertInfo.alerts[2]) {
+      if (this.alertInfo.alerts[2].id) {
+        this.updateAlertStatus(this.alertInfo.alerts[2].id, this.isCheckedDeviates);
+      }
+    }
+    else {
+      this.updateAlertAnomaly("anomaly");
+    }
+  }
+  //when changing selected average 
+  selectChangeHandlerAverage(event: any) {
+    this.averagePeriod = event;
+    this.updateAlertAnomaly();
+  }
+
+  selectChangeHandlerPercentActualSpend(event: any) {
+    if (this.actualSpend.value) {
+      if (this.actualSpend.value.length == 0) {
+        this.errorsMessages["actualSpend"].errorMessage = "you have to choose at least one threshold";
+      }
+
+      else {
+        this.deleteUndefined(event);
+        this.updateAlertActualSpend("actualSpend")
+        this.errorsMessages["actualSpend"].errorMessage = '';
+      }
+    }
+  }
+
+  selectChangeHandlerPercentProjectSpend(event: any) {
+    if (this.projectSpend.value) {
+      if (this.projectSpend.value.length == 0) {
+        this.errorsMessages["projectedSpend"].errorMessage = "you have to choose at least one threshold";
+      }
+      else {
+        this.deleteUndefined(event);
+        this.updateAlertProjectedSpend("projectedSpend");
+        this.errorsMessages["projectedSpend"].errorMessage = '';
+      }
+    }
+  }
+
+  selectChangeHandlerPercentAnomaly(event: any) {
+    if (this.anomaly.value) {
+      if (this.anomaly.value.length == 0) {
+        this.errorsMessages["anomaly"].errorMessage = "you have to choose at least one threshold";
+      }
+      else {
+        this.deleteUndefined(event);
+        this.updateAlertAnomaly("anomaly");
+        this.errorsMessages["anomaly"].errorMessage = '';
+      }
+
+    }
+
+  }
+
+  private deleteUndefined(event: any) {
+    if (event) {
+      for (let index = 0; index < event.length; index++) {
+        const element = event[index];
+        if (element.value == null) {
+          event.splice(index, 1);
+          index--;
+        }
+      };
+    }
+
+  }
+
+  selectChangeHandlerAlertsEmails(alertType: string, event: any) {
+
+    if (event) {
+      if (this.errorsMessages[alertType].errorMessage == '') {
+        this.clearEmailsArr(alertType);
+      }
+      if (event.length == 0) {
+        if (typeof this.emailsCopy[alertType].emailCopy[0] != "string") {
+          this.allAlertsEmails[alertType].removed.push(this.emailsCopy[alertType].emailCopy[0].userId);
+        }
+        else {
+          this.allAlertsEmails[alertType].removedEmail.push(this.emailsCopy[alertType].emailCopy[0]);
+        }
+        this.errorsMessages[alertType].errorMessage = "you have to choose at least one email";
+
+        return
+      }
+      if (event.length == 1 && this.errorsMessages[alertType].errorMessage != '') {
+        if ((this.allAlertsEmails[alertType].removed[0] && this.allAlertsEmails[alertType].removed[0] == event[0].value) ||
+          (this.allAlertsEmails[alertType].removedEmail[0] && this.allAlertsEmails[alertType].removedEmail[0] == event[0].value)) {
+          this.clearEmailsArr(alertType);
+          this.errorsMessages[alertType].errorMessage = ''
+          return
+        }
+
+        else {
+          if (event[0].value != undefined) {
+            this.createAddedArry([event[0].value], alertType, event)
+          }
+
+          else {
+            this.allAlertsEmails[alertType].addedEmail.push(event[0]);
+          }
+          if (this.isFirst[alertType].isFirstEntryActualSpend)
+            this.errorsMessages[alertType].errorMessage = ''
+        }
+
+      }
+
+      else if (this.emailsCopy[alertType].emailCopy.length < event.length) {
+        event.forEach(element => {
+          if (element.value == undefined && (this.allAlertsEmails[alertType].addedEmail.length == 0)) {
+            this.allAlertsEmails[alertType].added = [];
+            this.allAlertsEmails[alertType].addedEmail.push(element);
+          }
+          else if (this.allAlertsEmails[alertType].addedEmail.length == 0) {
+
+            var arrAdded = [];
+
+            event.forEach(element => {
+              if (parseInt(element.value)) {
+                var indexOf = this.emailsCopy[alertType].emailCopy.findIndex(x => x == element.value);
+                if (indexOf === -1) {
+                  arrAdded.push(element.value);
+                }
+              }
+
+              else {
+                var indexOf = this.emailsCopy[alertType].emailCopy.findIndex(x => x == element.name);
+                if (indexOf === -1) {
+                  arrAdded.push(element);
+                }
+              }
+            });
+
+
+            //   var arrAdded = this.symmetricDifference(this.emailActualSpendAdded, event)
+            this.allAlertsEmails[alertType].addedEmail = [];
+            this.allAlertsEmails[alertType].added = [];
+            this.createAddedArry(arrAdded, alertType, event);
+
+            // arrAdded.forEach(element => {
+            //   var email = event.find(user => user.value == element)
+            //   if (email) {
+            //     this.emailActualSpendAddedEmail.push(email.name)
+            //   }
+            // });
+          }
+        });
+      }
+      else if (this.emailsCopy[alertType].emailCopy.length > event.length) {
+        this.allAlertsEmails[alertType].addedEmail = [];
+        this.allAlertsEmails[alertType].added = [];
+        var deleted = this.arraysDifferenceFinder(this.emailsCopy[alertType].emailCopy, event)
+
+        if (parseInt(deleted[0].userId)) {
+          this.allAlertsEmails[alertType].removed.push(deleted[0].userId);
+        }
+        else {
+          this.allAlertsEmails[alertType].removedEmail.push(deleted[0]);
+        }
+
+      }
+
+
+    }
+    if (this.isFirst[alertType].isFirstEntryActualSpend)
+      this.updateAlerts(alertType);
+    else
+      this.isFirst[alertType].isFirstEntryActualSpend = true;
+
+
+  }
+  private clearEmailsArr(alertType: string) {
+    this.allAlertsEmails[alertType].removed = [];
+    this.allAlertsEmails[alertType].removedEmail = [];
+    this.allAlertsEmails[alertType].addedEmail = [];
+    this.allAlertsEmails[alertType].added = [];
+  }
+
+  private createAddedArry(arrAdded: any[], alertType: string, event: any) {
+    arrAdded.forEach(element => {
+      if (parseInt(element)) {
+        this.allAlertsEmails[alertType].added.push(element);
+      }
+      else {
+        if (element.value != undefined) {
+          var email = event.find(user => user.value == element.value);
+          if (email) {
+            this.allAlertsEmails[alertType].addedEmail.push(email.name);
+          }
+        }
+        else {
+          var email = event.find(user => user == element);
+          if (email) {
+            this.allAlertsEmails[alertType].addedEmail.push(email);
+          }
+        }
+      }
+
+    });
+  }
+
+  updateAlerts(alertType: string) {
+    if (alertType == "actualSpend")
+      this.updateAlertActualSpend(alertType);
+    else if (alertType == "projectedSpend")
+      this.updateAlertProjectedSpend(alertType);
+    else
+      this.updateAlertAnomaly(alertType);
+  }
+
+  arraysDifferenceFinder(copyEmails, eventEmails) {
+    var result = [];
+    var eventEmailsValues = [];
+    eventEmails.forEach(element => {
+      eventEmailsValues.push(element.value)
+    });
+    var deletedElement = copyEmails.filter(copyEmailsItem => !eventEmailsValues.includes(copyEmailsItem))
+    return deletedElement
+
+
+  }
+
+  updateAlertActualSpend(alertType?: string) {
+
+    if (this.isUpdate && this.alertInfo.enabled) {
+      if (this.alertInfo.alerts[0]) {
+        this.newAlertActualSpend = {
+          averagePeriod: null,
+          status: this.isCheckedActualSpend === true ? "ENABLED" : "DISABLED",
+          thresholds: this.actualSpend.value ? this.thresholdsParser(this.actualSpend.value) : [100],
+          id: this.alertInfo.alerts[0].id,
+          alertSubscribers: {
+            added: this.allAlertsEmails[alertType].added,
+            addedEmail: this.allAlertsEmails[alertType].addedEmail,
+            removed: this.allAlertsEmails[alertType].removed,
+            removedEmail: this.allAlertsEmails[alertType].removedEmail
+          },
+        }
+
+        this.budgetsService.updateAlert(this.newAlertActualSpend, { observe: 'response' }).subscribe(res => {
+          if (res.status === 200) {
+            this.nzMessageService.success("Alert updated successfully");
+            this.budgetsService.getBudget(this.alertInfo.id, { observe: 'response' }).subscribe(res => {
+              this.alertInfo = res.body;
+              this.changeAlertsOrder();
+              this.duplicateEmails();
+            });
+          }
+        });
+
+      }
+
+      else {
+        var newAlert = {
+          averagePeriod: null,
+          budgetId: this.alertInfo.id,
+          thresholds: this.actualSpend.value ? this.thresholdsParser(this.actualSpend.value) : [100],
+          alertSubscribers: {
+            added: this.allAlertsEmails[alertType].added,
+            addedEmail: this.allAlertsEmails[alertType].addedEmail,
+            removed: this.allAlertsEmails[alertType].removed,
+            removedEmail: this.allAlertsEmails[alertType].removedEmail
+          },
+          type: AlertTypeEnum.ACTUAL_SPEND
+        }
+        this.budgetsService.createAlert(newAlert, { observe: 'response' }).subscribe(res => {
+
+          if (res.status === 201 || res.status == "ENABLED") {
+            this.nzMessageService.success("Alert Enabled successfully");
+            this.budgetsService.getBudget(this.alertInfo.id, { observe: 'response' }).subscribe(res => {
+              this.alertInfo = res.body;
+              this.changeAlertsOrder();
+              this.duplicateEmails();
+            });
+          }
+        });
+      }
+    }
+
+  }
+
+  updateAlertProjectedSpend(alertType?: string) {
+    if (this.isUpdate && this.alertInfo.enabled) {
+      if (this.alertInfo.alerts[1]) {
+        this.newAlertExceed = {
+          averagePeriod: null,
+          status: this.isCheckedProjectSpend === true ? "ENABLED" : "DISABLED",
+          thresholds: this.projectSpend.value ? this.thresholdsParser(this.projectSpend.value) : [10],
+          id: this.alertInfo.alerts[1] ? this.alertInfo.alerts[1].id : null,
+          alertSubscribers: {
+            added: this.allAlertsEmails[alertType].added,
+            addedEmail: this.allAlertsEmails[alertType].addedEmail,
+            removed: this.allAlertsEmails[alertType].removed,
+            removedEmail: this.allAlertsEmails[alertType].removedEmail
+          },
+        }
+        this.budgetsService.updateAlert(this.newAlertExceed, { observe: 'response' }).subscribe(res => {
+
+          if (res.status === 200) {
+            this.nzMessageService.success("Alert updated successfully");
+            this.budgetsService.getBudget(this.alertInfo.id, { observe: 'response' }).subscribe(res => {
+              this.alertInfo = res.body;
+              this.changeAlertsOrder();
+              this.duplicateEmails();
+            });
+          }
+        });
+      }
+
+      else {
+        var newAlert = {
+          averagePeriod: null,
+          budgetId: this.alertInfo.id,
+          thresholds: this.projectSpend.value ? this.thresholdsParser(this.projectSpend.value) : [10],
+          alertSubscribers: {
+            added: this.emailExceed.value ? this.emailExceed.value : [this.defaultUser.id],
+            addedEmail: this.allAlertsEmails[alertType].addedEmail ? this.allAlertsEmails[alertType].addedEmail : [this.defaultUser.email],
+            removed: this.allAlertsEmails[alertType].removed,
+            removedEmail: this.allAlertsEmails[alertType].removedEmail
+          },
+          type: AlertTypeEnum.PROJECTED_SPEND
+        }
+        this.budgetsService.createAlert(newAlert, { observe: 'response' }).subscribe(res => {
+          if (res.status === 201 || res.status == "ENABLED") {
+            this.nzMessageService.success("Alert Enabled successfully");
+            this.budgetsService.getBudget(this.alertInfo.id, { observe: 'response' }).subscribe(res => {
+              this.alertInfo = res.body;
+              this.changeAlertsOrder();
+              this.duplicateEmails();
+            });
+          }
+        });
+      }
+    }
+
+  }
+
+
+  updateAlertAnomaly(alertType?: string) {
+    if (this.isUpdate && this.alertInfo.enabled) {
+      if (this.alertInfo.alerts[2]) {
+        this.newAlertDeviates = {
+          averagePeriod: parseInt(this.averagePeriod),
+          status: this.isCheckedDeviates === true ? "ENABLED" : "DISABLED",
+          thresholds: this.anomaly.value ? this.thresholdsParser(this.anomaly.value) : [60],
+          id: this.alertInfo.alerts[2] ? this.alertInfo.alerts[2].id : null,
+          alertSubscribers: {
+            added: this.allAlertsEmails[alertType].added,
+            addedEmail: this.allAlertsEmails[alertType].addedEmail,
+            removed: this.allAlertsEmails[alertType].removed,
+            removedEmail: this.allAlertsEmails[alertType].removedEmail
+          },
+        }
+        this.budgetsService.updateAlert(this.newAlertDeviates, { observe: 'response' }).subscribe(res => {
+
+          if (res.status === 200) {
+            this.nzMessageService.success("Alert updated successfully");
+            this.budgetsService.getBudget(this.alertInfo.id, { observe: 'response' }).subscribe(res => {
+              this.alertInfo = res.body;
+              this.changeAlertsOrder();
+              this.duplicateEmails();
+            });
+          }
+        });
+      }
+
+      else {
+        var newAlert = {
+          averagePeriod: parseInt(this.averagePeriod),
+          budgetId: this.alertInfo.id,
+          thresholds: this.anomaly.value ? this.thresholdsParser(this.anomaly.value) : [60],
+          alertSubscribers: {
+            added: this.emailAnomaly.value ? this.emailAnomaly.value : [this.defaultUser.id],
+            addedEmail: this.allAlertsEmails[alertType].addedEmail ? this.allAlertsEmails[alertType].addedEmail : [this.defaultUser.email],
+            removed: this.allAlertsEmails[alertType].removed,
+            removedEmail: this.allAlertsEmails[alertType].removedEmail
+          },
+          type: AlertTypeEnum.ANOMALY
+        }
+        this.budgetsService.createAlert(newAlert, { observe: 'response' }).subscribe(res => {
+          if (res.status === 201 || res.status == "ENABLED") {
+            this.nzMessageService.success("Alert Enabled successfully");
+            this.budgetsService.getBudget(this.alertInfo.id, { observe: 'response' }).subscribe(res => {
+              this.alertInfo = res.body;
+              this.changeAlertsOrder();
+              this.duplicateEmails();
+            });
+
+          }
+        });
+      }
+    }
+
+
+  }
+
+  //creat ant retune arr of threshold from the multi select field e.g [10,20,30]
+  thresholdsParser(precentList: any): number[] {
+    if (precentList) {
+      var thresholds = new Array<number>();
+      for (let index = 0; index < precentList.length; index++) {
+        const element = precentList[index];
+        if (element) {
+          thresholds.push(element.value);
+        }
+      }
+    }
+    return thresholds
+  }
+
+
+  updateAlertStatus(id, status) {
+    if (!this.alertInfo.enabled) {
+      this.budgetsService.updateAlertStatus(id, status, { observe: 'response' }).subscribe(res => {
+        if (res) {
+          this.nzMessageService.success(`Alert ${(res.status == 'DISABLED' ? 'Disabled' : 'Enabled')} successfully`);
+        }
+      });
+    }
+  }
+
+
+}
+

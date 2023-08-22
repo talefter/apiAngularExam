@@ -1,0 +1,36 @@
+
+  
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Create At</th>
+        <th>Type</th>
+        <th>Size</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let file of uploadedFiles">
+        <td>{{ file.name }}</td>
+        <td>{{ file.lastModified | date}}</td>
+        <td>{{ file.type }}</td>
+        <td>{{ file.size }}</td>
+        <td>
+            <select [(ngModel)]="selectedAction" (ngModelChange)="performAction(file)">
+                <option value="rename">Rename File</option>
+                <option value="delete">Delete File</option>
+                <option value="duplicate">duplicate File</option>
+              </select>
+              <input *ngIf="selectedAction === 'rename'" [(ngModel)]="newFileName" placeholder="New File Name"  (keyup.enter)="onEnterRename(file)">
+              
+          </td>
+      </tr>
+    </tbody>
+   
+  </table>
+  <label class="footer">
+    <input type="file" id="files" (change)="onFileSelected($event)" class="upload-file"/>
+   <span class="label-file">Upload</span> 
+</label>
+

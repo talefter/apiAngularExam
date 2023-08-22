@@ -1,0 +1,408 @@
+.card {
+  width: 343px;
+  margin-right: 11px;
+  border: none;
+  margin-bottom: -4px;
+    border-radius: 0;
+    padding-bottom: 20px;
+}
+
+.add-alert-divider {
+  margin-top: 20px;
+  margin-bottom: 26px;
+}
+
+.notification-icon {
+  position: relative;
+  color: rgb(105, 102, 102);
+}
+
+.title {
+  position: absolute;
+  padding: 2px;
+}
+.alert-sub-title{
+  font-size: 16px;
+  line-height: 100%;
+  color: #000000;
+  opacity: 0.7;
+  padding-bottom: 16px;
+
+}
+
+.alert-select{
+  /* background-image: url("/assets/images/bbcursor.gif"); */
+  background-repeat: no-repeat;
+  background-position: right; 
+  font-size: 12px;
+  line-height: 22px;
+  position: relative;
+  height: 0px;
+  right: 9px;
+}
+
+.disable-span{
+  color: rgba(0, 0, 0, 0.65);
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 22px;
+  /* identical to box height, or 100% */
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.65);
+  cursor: not-allowed;
+} 
+
+.background-select{
+  background-image: url('/assets/images/SearchIcon.svg');
+  background-repeat: no-repeat;
+  background-position: right; 
+  font-size: 12px;
+  position: relative;
+  bottom: 4px;
+  right: 9px;
+  width: 200px;
+}
+.alert-percent-select{
+  width: 118px;
+  margin-left: -12px;
+
+}
+.select-color{
+  font-weight: 500;
+font-size: 14px;
+line-height: 22px;
+/* identical to box height, or 100% */
+color: #1E6EE5;
+border-bottom: 1px dashed #1E6EE5;
+}
+.alerts-title {
+  font-size: 22px;
+  line-height: 100%;
+  padding-bottom: 46px;
+  color: #000000;
+
+}
+
+.icon-WalletFill {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+.alert-content {
+  padding: 14px;
+  font-size: 14px;
+  background: #FFFFFF;
+  border: 1px solid #D9D9D9;
+  box-sizing: border-box;
+  border-radius: 4px;
+  width: 311px;
+  height: 230px;
+
+}
+
+.toggle {
+  color: rgb(105, 102, 102);
+  padding-top: 19px;
+  margin-right: -27px;
+}
+
+.alert-container {
+  text-align: left;
+  width: 100%;
+  padding-bottom: 36px;
+}
+
+#alert-select-wrapper {
+  text-align: left;
+  width: 59%;
+  height: 100%;
+  line-height: 22px;
+
+}
+
+#nz-switch-wrapper {
+  float: right;
+  width: 14%;
+  height: 100%;
+  text-align: center;
+}
+
+.input-text {
+  font-weight: bold !important;
+}
+
+.actions {
+  margin-top: 4%;
+}
+
+::placeholder {
+  color: black;
+}
+
+[nzPlaceHolder] {
+  color: black;
+}
+
+.average-form-item{
+  display: flex;
+  width: 155px;
+}
+
+.precent-select-wrapper{
+  display: flex;
+align-items: baseline;
+height: 0px;
+}
+
+.third-alert-wrapper{
+  width: 242px
+}
+.select-second-alert-wrapper{
+  display: inline-block
+}
+
+.first-alert-wrapper{
+width: 228px
+}
+
+.form-item-alert{
+  height: 4px;
+}
+.alert-average-select{
+  bottom: 5px;
+}
+
+.error-message{
+
+  font-size: 12px;
+   color: red;
+   width: 238px;
+}
+.error-message-anomaly{
+  font-size: 12px;
+  color: red;
+  padding-left: 15px;
+}
+
+.form-control-projected{
+  margin-left: 11px;
+  width: 146px;
+}
+.email-option-group{
+  display:flex;
+  align-items: center;
+}
+@media screen and (max-width: 850px) {
+
+  .card {
+    width: unset;
+    margin-right:unset ;
+    margin-bottom: 40px;
+    padding-bottom: unset;
+  }
+  .alert-content{
+    width: 288px;
+  }
+  .alert-percent-select{
+    margin-left: -8px;
+  }
+  .alert-average-select{
+    width: 139px;
+}
+.form-control-projected{
+  width: 130px;
+}
+
+}
+
+
+--------------------------------------------------------------
+<nz-card  class="card">
+    <span class="alerts-title"><span class="icon-WalletFill"></span>Alerts</span>
+    <nz-divider class="add-alert-divider"></nz-divider>
+
+
+    <div class="error-message">{{this.errorsMessages["actualSpend"].errorMessage}}</div>
+    <!-- <form [formGroup]="validateForm" (ngSubmit)="submitForm()"  > -->
+    <div class="alert-container">
+        <div class="alert-content" appearance="none">
+            <div class="alert-sub-title">Actual Spend
+                <span id="nz-switch-wrapper">
+                    <nz-switch [nzDisabled]="alertInfo && !alertInfo.enabled" [ngModel]="isCheckedActualSpend" nzSize="small" class="toggle" value
+                        (click)="onChangeActualSpend()"></nz-switch>
+                </span>
+            </div>
+            <div class="first-alert-wrapper">
+                <span class="alert-select-wrapper">
+                    <span (click)="onAlertClick()">Alert </span>
+                    <span [class] ="!isCheckedActualSpend || alertInfo && alertInfo.enabled==false ?'disable-span':'select-color'" *ngIf="!alertClicked"  (click)="isCheckedActualSpend&&onAlertClick()">{{defaultUsers['actualSpend'][0]?defaultUsers['actualSpend'][0].name:defaultUserName.name}} <span  *ngIf="defaultUsers['actualSpend'].length>1" >+{{defaultUsers['actualSpend'].length ==2?'1':defaultUsers['actualSpend'].length-1}}</span></span>
+                    <span  *ngIf="alertClicked">
+                        <nz-select nzBorderless   #emailActualSelect  (nzOnSearch)="emailValidator($event)" [nzDisabled]="isCheckedActualSpend === false ||alertInfo &&  !alertInfo.enabled" class="alert-select"  [nzAutoFocus]="focus"
+                        [nzMaxTagCount]="1" [nzMaxTagPlaceholder]="tagPlaceHolder"  (ngModelChange)="selectChangeHandlerAlertsEmails('actualSpend',$event)"
+                         nzMode="tags" [(ngModel)]="defaultUsers['actualSpend']"
+                        nzPlaceHolder="Please select" [formControl]="emailActualSpend" [nzDropdownStyle]="{'width':'230px'}">
+                        <nz-option-group class="email-option-group"  nzLabel="Accounts">
+                            <nz-option  *ngFor="let option of listOfEmailOptions" [nzLabel]="option.name"
+                            [nzValue]="option"></nz-option>
+                          </nz-option-group>
+                          <nz-option-group class="email-option-group" nzLabel="External Emails">
+                            <nz-option *ngFor="let option of listOfExternalEmailOptions" [nzLabel]="option.name"
+                            [nzValue]="option"></nz-option>
+                          </nz-option-group>
+                        <!-- [(ngModel)]="emailActualSpend[0].name"  -->
+                        
+                    </nz-select>
+                    
+                        <ng-template #tagPlaceHolder let-selectedList> +{{ selectedList.length}}</ng-template>
+                    
+                    </span>
+                    when the actual spend reaches
+                    <nz-form-item appearance="fill">
+                        <nz-form-control>
+                            <nz-select nzMaxMultipleCount="3"  nzMaxTagCount="1"  class="alert-percent-select" 
+                                [nzMaxTagPlaceholder]="tagPlaceHolder"
+                                (ngModelChange)="selectChangeHandlerPercentActualSpend($event)"
+                                [nzDisabled]="isCheckedActualSpend === false ||alertInfo && !alertInfo.enabled" nzPlaceHolder="percent"
+                                [(ngModel)]="this.selectedFirstAlert" [formControl]="actualSpend" nzMode="multiple"
+                                nzBorderless name="first" id="first" [nzDropdownStyle]="{'width':'100px'}" >
+                                <nz-option *ngFor="let percent of this.percentList" [nzLabel]="percent.text"
+                                    [nzValue]="percent"></nz-option>
+                            </nz-select> of the budget
+                            <ng-template #tagPlaceHolder let-selectedList> +{{ selectedList.length}}</ng-template>
+                        
+                        </nz-form-control>
+
+                    </nz-form-item>
+                
+                </span>
+               
+            </div>
+
+        </div>
+
+    </div>
+
+  
+    <div class="error-message">{{this.errorsMessages["projectedSpend"].errorMessage}}</div>
+    <div class="alert-container">
+        
+        <div class="alert-content" appearance="none">
+            <div class="alert-sub-title">Projected Spend</div>
+            <span id="nz-switch-wrapper">
+                <nz-switch  [nzDisabled]="alertInfo && !alertInfo.enabled || alertInfo && alertInfo.granularity =='LIFETIME' || alertInfo && alertInfo.granularity =='DAILY'"  [ngModel]="isCheckedProjectSpend" nzSize="small" class="toggle" value
+                    (click)="onChangeProjectedSpend()"></nz-switch>
+            </span>
+            <div class="third-alert-wrapper">
+            <span class="alert-select-wrapper">        
+                <span (click)="onSecondAlertClick()">Alert </span>
+                <span  [class] ="!isCheckedProjectSpend||alertInfo && alertInfo.granularity =='LIFETIME' || alertInfo && alertInfo.granularity =='DAILY' ?'disable-span':'select-color'" *ngIf="!secondAlertClicked" (click)="isCheckedProjectSpend&&onSecondAlertClick()">{{defaultUsers['projectedSpend'][0]?defaultUsers['projectedSpend'][0].name:defaultUserName.name}} <span  *ngIf="defaultUsers['projectedSpend'].length>1" >+{{defaultUsers['projectedSpend'].length ==2?'1':defaultUsers['projectedSpend'].length-1}}</span></span>
+                <span *ngIf="secondAlertClicked">
+                    <nz-select  #emailProjectedSelect (nzOnSearch)="emailValidator($event)" [nzDisabled]="!isCheckedProjectSpend || !alertInfo.enabled || alertInfo &&  alertInfo.granularity =='LIFETIME' || alertInfo && alertInfo.granularity =='DAILY'" nzBorderless  class="alert-select"  [nzAutoFocus]="focus"
+                    [nzMaxTagCount]="1" [nzMaxTagPlaceholder]="tagPlaceHolder"  (ngModelChange)="selectChangeHandlerAlertsEmails('projectedSpend',$event)"
+                     nzMode="tags" [(ngModel)]="defaultUsers['projectedSpend']"
+                    nzPlaceHolder="Please select" [formControl]="emailExceed" [nzDropdownStyle]="{'width':'230px'}">
+                    <!-- [(ngModel)]="emailActualSpend[0].name"  -->
+                    <nz-option-group class="email-option-group" nzLabel="Accounts">
+                        <nz-option class="email-option-group" *ngFor="let option of listOfEmailOptions" [nzLabel]="option.name"
+                        [nzValue]="option"></nz-option>
+                      </nz-option-group>
+                      <nz-option-group class="email-option-group" nzLabel="External Emails">
+                        <nz-option class="email-option-group" *ngFor="let option of listOfExternalEmailOptions" [nzLabel]="option.name"
+                        [nzValue]="option"></nz-option>
+                      </nz-option-group>
+                </nz-select>
+
+                    <ng-template #tagPlaceHolder let-selectedList> +{{ selectedList.length}}</ng-template>
+                    
+                </span>
+                when spend is projected to exceed the budget by
+                <span class="select-second-alert-wrapper" >
+                    <nz-form-item  class="form-control-projected" appearance="fill">
+                        <nz-form-control class="form-control-projected">
+                            <nz-select    nzMaxTagCount="1" nzMaxMultipleCount="3" [nzOpen]="projectedPercentOpen" class="alert-percent-select" (ngModelChange)="selectChangeHandlerPercentProjectSpend($event)"
+                      [nzDisabled]="!isCheckedProjectSpend || alertInfo && !alertInfo.enabled  || alertInfo.granularity =='DAILY'|| alertInfo.granularity =='LIFETIME'" [nzMaxTagPlaceholder]="tagPlaceHolder"
+                                nzPlaceHolder="percent" [(ngModel)]="this.selectedSecondAlert"
+                                [formControl]="projectSpend" nzMode="multiple" nzBorderless name="second" id="second" [nzDropdownStyle]="{'width':'100px'}">
+                                <nz-option *ngFor="let percent of this.percentList" [nzLabel]="percent.text"
+                                    [nzValue]="percent"></nz-option>
+                            </nz-select>
+                           
+                        </nz-form-control>
+                        <ng-template #tagPlaceHolder let-selectedList> +{{ selectedList.length}}</ng-template>
+                       
+                    </nz-form-item>
+                </span>
+               
+            </span>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="error-message-anomaly">{{this.errorsMessages["anomaly"].errorMessage}}</div>
+    <div class="alert-container">
+        <div class="alert-content" appearance="none">
+            <div class="alert-sub-title">Anomaly</div>
+            <span id="nz-switch-wrapper">                               
+                <nz-switch  [nzDisabled]="alertInfo && !alertInfo.enabled"  [ngModel]="isCheckedDeviates" nzSize="small" class="toggle" value
+                    (click)="onChangeAnomaly()"></nz-switch>
+            </span>
+            <div class="third-alert-wrapper" >
+            <span class="alert-select-wrapper">          
+                <span (click)="onThirdAlertClick()">Alert </span>
+                <span [class] ="!isCheckedDeviates ||alertInfo && alertInfo.enabled==false?'disable-span':'select-color'"  *ngIf="!thirdAlertClicked" (click)="isCheckedDeviates&&onThirdAlertClick()">{{defaultUsers['anomaly'][0]?defaultUsers['anomaly'][0].name:defaultUserName.name}} <span  *ngIf="defaultUsers['anomaly'].length>1" >+{{defaultUsers['anomaly'].length ==2?'1':defaultUsers['anomaly'].length-1}}</span></span>
+                <span *ngIf="thirdAlertClicked">
+                    <nz-select #emailAnomalySelect  (nzOnSearch)="emailValidator($event)" nzBorderless  [nzDisabled]="!isCheckedDeviates ||alertInfo &&!alertInfo.enabled"   class="alert-select"  [nzAutoFocus]="focus"
+                    [nzMaxTagCount]="1" [nzMaxTagPlaceholder]="tagPlaceHolder"  (ngModelChange)="selectChangeHandlerAlertsEmails('anomaly',$event)"
+                     nzMode="tags" [(ngModel)]="defaultUsers['anomaly']"
+                    nzPlaceHolder="Please select" [formControl]="emailAnomaly" [nzDropdownStyle]="{'width':'230px'}">
+                    <!-- [(ngModel)]="emailActualSpend[0].name"  -->
+                    <nz-option-group class="email-option-group" nzLabel="Accounts">
+                        <nz-option class="email-option-group" *ngFor="let option of listOfEmailOptions" [nzLabel]="option.name"
+                        [nzValue]="option"></nz-option>
+                      </nz-option-group>
+                      <nz-option-group class="email-option-group"  nzLabel="External Emails">
+                        <nz-option class="email-option-group" *ngFor="let option of listOfExternalEmailOptions" [nzLabel]="option.name"
+                        [nzValue]="option"></nz-option>
+                      </nz-option-group>
+                </nz-select>
+                    <ng-template #tagPlaceHolder let-selectedList> +{{ selectedList.length}}</ng-template>
+                    
+                </span>
+                when the daily cost deviates by
+                <div class="precent-select-wrapper">
+                    <nz-form-item appearance="fill">
+                        <nz-form-control >
+                                <nz-select  nzMaxTagCount="1" nzMaxMultipleCount="3" [nzOpen]="anomalyPercentOpen"  class="alert-percent-select" (ngModelChange)="selectChangeHandlerPercentAnomaly($event)"
+                                [nzDisabled]="isCheckedDeviates === false ||alertInfo && !alertInfo.enabled" [nzMaxTagPlaceholder]="tagPlaceHolder"
+                                    nzPlaceHolder="percent" [(ngModel)]="this.selectedThirdAlert"
+                                    [formControl]="anomaly" nzMode="multiple" nzBorderless name="third" id="third" [nzDropdownStyle]="{'width':'100px'}">
+                                    <nz-option *ngFor="let percent of this.percentList" [nzLabel]="percent.text"
+                                        [nzValue]="percent"></nz-option>
+                                </nz-select>
+                                <ng-template #tagPlaceHolder let-selectedList> +{{ selectedList.length}}</ng-template>
+                           
+                        </nz-form-control>
+                    </nz-form-item>
+                    <span class="average-form-item">from
+                        <nz-form-item class="average-form-item" appearance="fill">
+                            <nz-form-control>
+                                <nz-select  [formControl]="averagePeriodForm" ngModel="over the last 60 days"  nzBorderless nzPlaceHolder="average" [nzDisabled]="isCheckedDeviates === false||alertInfo && !alertInfo.enabled"
+                            (ngModelChange)="selectChangeHandlerAverage($event)" class="input-line alert-average-select" id="averagePeriod"
+                            name="averagePeriod" [(ngModel)]="averagePeriod">
+                            <nz-option nzLabel="over the last 30 days" nzValue="30"></nz-option>
+                            <nz-option nzLabel="over the last 60 days" nzValue="60"></nz-option>
+                            <nz-option nzLabel="over the last 90 days" nzValue="90"></nz-option>
+                        </nz-select>
+                            </nz-form-control>
+                        </nz-form-item>
+                    </span>
+                </div>
+            </span>
+            </div>   
+        </div>
+     
+
+    </div>
+ 
+    <!-- </form> -->
+</nz-card>
